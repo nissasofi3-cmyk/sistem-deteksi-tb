@@ -1,41 +1,9 @@
 import streamlit as st
-import pandas as pd
 
+def input_pasien(cursor, conn):
 
-def deteksi_tb(cursor, conn, model):
+    kiri, kanan = st.columns([2.3,1])
 
-    st.markdown("""
-    <div style="
-    background:linear-gradient(135deg,#0F766E,#0891B2);
-    padding:15px;
-    border-radius:10px;
-    color:white;
-    margin-bottom:15px;
-    width:60%;
-    margin-left:0;
-    margin-right:auto;
-    ">
-    <h2 style="margin-bottom:5px;">
-    🫁 Prediksi TB Paru
-    </h2>
-
-    <p style="margin:0;">
-    Analisis risiko Tuberkulosis Paru menggunakan Machine Learning (Random Forest).
-    </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if not st.session_state.data_pasien:
-        st.warning("Silakan input data pasien terlebih dahulu.")
-        return
-
-    pasien = st.session_state.data_pasien
-
-    kiri, kanan = st.columns([2,1])
-
-    # ===========================
-    # DATA PASIEN
-    # ===========================
     with kiri:
 
         st.markdown("""
@@ -51,148 +19,154 @@ def deteksi_tb(cursor, conn, model):
         <h2 style="
         color:#4FD1C5;
         margin:0;">
-        Data Pasien
+        Form Input Data Pasien
         </h2>
         </div>
         """, unsafe_allow_html=True)
-
-        c1, c2 = st.columns(2)
+        c1, c2, c3 = st.columns(3)
 
         with c1:
-            st.text_input("Nama", pasien["nama"], disabled=True)
-            st.text_input("Umur", pasien["umur"], disabled=True)
-            st.text_input("Jenis Kelamin", pasien["jk"], disabled=True)
-            st.text_input("Sesak Nafas", pasien["sesak"], disabled=True)
+            nama = st.text_input("Nama Pasien")
 
         with c2:
-            st.text_input("Batuk Berdarah", pasien["batuk"], disabled=True)
-            st.text_input("Demam", pasien["demam"], disabled=True)
-            st.text_input("Mual Muntah", pasien["mual"], disabled=True)
-            st.text_input("Penyakit Bawaan", pasien["penyakit"], disabled=True)
-        
-        st.write("")
-
-        proses = st.button("🔍 Proses Prediksi")
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-
-    # ===========================
-    # PROSES PREDIKSI
-    # ===========================
-    if proses:
-
-        input_model = pd.DataFrame([[
-            pasien["umur"],
-            0 if pasien["jk"] == "L" else 1,
-            1 if pasien["sesak"] == "Ya" else 0,
-            1 if pasien["batuk"] == "Ya" else 0,
-            1 if pasien["demam"] == "Ya" else 0,
-            1 if pasien["mual"] == "Ya" else 0,
-            1 if pasien["penyakit"] == "Ya" else 0
-        ]], columns=[
-            "Umur",
-            "Jenis Kelamin",
-            "Sesak Nafas",
-            "Batuk",
-            "Demam",
-            "Mual Muntah",
-            "Penyakit Bawaan"
-        ])
-
-        hasil = model.predict(input_model)[0]
-        prob = model.predict_proba(input_model)[0]
-
-        cursor.execute("""
-        SELECT id_pasien
-        FROM pasien
-        ORDER BY id_pasien DESC
-        LIMIT 1
-        """)
-
-        id_pasien = cursor.fetchone()[0]
-
-        hasil_prediksi = "TB Paru" if hasil == 1 else "Tidak TB"
-        probabilitas = round(prob[1] * 100, 2)
-
-        cursor.execute("""
-        INSERT INTO hasil_deteksi
-        (id_pasien, hasil_prediksi, probabilitas, tanggal_deteksi)
-        VALUES (?,?,?,datetime('now'))
-        """, (id_pasien, hasil_prediksi, probabilitas))
-
-        conn.commit()
-
-        st.divider()
-
-        st.subheader("📊 Hasil Prediksi")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-
-            st.metric(
-                "Probabilitas TB Paru",
-                f"{round(prob[1]*100,2)} %"
+            umur = st.number_input(
+                "Umur",
+                min_value=0,
+                max_value=120,
+                value=0
             )
 
-            st.progress(int(prob[1]*100))
+        with c3:
+            jk = st.selectbox(
+                "Jenis Kelamin",
+                ["L", "P"]
+            )
 
-        with col2:
+        c4, c5, c6 = st.columns(3)
 
-            st.metric(
-                "Probabilitas Tidak TB",
-                f"{round(prob[0]*100,2)} %"
+        with c4:
+            sesak = st.selectbox(
+                "Sesak Nafas",
+                ["Tidak", "Ya"]
+            )
+
+        with c5:
+            batuk = st.selectbox(
+                "Batuk",
+                ["Tidak", "Ya"]
+            )
+
+        with c6:
+            demam = st.selectbox(
+                "Demam",
+                ["Tidak", "Ya"]
+            )
+
+        c7, c8 = st.columns(2)
+
+        with c7:
+            mual = st.selectbox(
+                "Mual Muntah",
+                ["Tidak", "Ya"]
+            )
+
+        with c8:
+            penyakit = st.selectbox(
+                "Penyakit Bawaan",
+                ["Tidak", "Ya"]
             )
 
         st.write("")
 
-        if hasil == 1:
+        if st.button("💾 Simpan Data Pasien"):
 
-            st.markdown(f"""
-            <div style="
-            background:#FEE2E2;
-            border-left:8px solid #DC2626;
-            padding:25px;
-            border-radius:15px;">
+            if nama == "" or umur == 0:
 
-            <h2 style="color:#B91C1C;">
-            ⚠️ TERINDIKASI TB PARU
-            </h2>
+                st.warning("Nama dan umur wajib diisi.")
 
-            <h3>
-            Probabilitas : {probabilitas}%
-            </h3>
+            else:
 
-            <p>
-            Pasien disarankan menjalani pemeriksaan lanjutan
-            oleh tenaga kesehatan.
-            </p>
+                sql = """
+                INSERT INTO pasien
+                (
+                    nama,
+                    umur,
+                    jenis_kelamin,
+                    sesak_nafas,
+                    batuk,
+                    demam,
+                    mual_muntah,
+                    penyakit_bawaan
+                )
+                VALUES
+                (?,?,?,?,?,?,?,?)
+                """
 
-            </div>
-            """, unsafe_allow_html=True)
+                val = (
+                    nama,
+                    umur,
+                    jk,
+                    sesak,
+                    batuk,
+                    demam,
+                    mual,
+                    penyakit
+                )
 
-        else:
+                cursor.execute(sql, val)
+                conn.commit()
 
-            st.markdown(f"""
-            <div style="
-            background:#DCFCE7;
-            border-left:8px solid #16A34A;
-            padding:25px;
-            border-radius:15px;">
+                st.session_state.data_pasien = {
+                "nama": nama,
+                "umur": umur,
+                "jk": jk,
+                "sesak": sesak,
+                "batuk": batuk,
+                "demam": demam,
+                "mual": mual,
+                "penyakit": penyakit
+                }
 
-            <h2 style="color:#15803D;">
-            ✅ TIDAK TERINDIKASI TB PARU
-            </h2>
+                st.session_state.menu = "Deteksi TB Paru"
+                st.rerun()
+                
 
-            <h3>
-            Probabilitas : {100-probabilitas:.2f}%
-            </h3>
+    with kanan:
 
-            <p>
-            Berdasarkan model Machine Learning,
-            pasien tidak menunjukkan indikasi TB Paru.
-            </p>
+        st.markdown("""
+        <div style="
+        background:#111827;
+        border-radius:18px;
+        padding:20px;
+        color:white;
+        border-left:5px solid #14B8A6;">
 
-            </div>
-            """, unsafe_allow_html=True)
+        <h3>📌 Instruksi</h3>
+
+        ✔ Isi seluruh data pasien.<br><br>
+
+        ✔ Pastikan data benar.<br><br>
+
+        ✔ Klik tombol <b>Simpan Data Pasien</b>.<br><br>
+
+        ✔ Lanjutkan ke menu <b>Deteksi TB Paru</b>.
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.write("")
+
+        st.markdown("""
+        <div style="
+        background:linear-gradient(135deg,#0F766E,#14B8A6);
+        border-radius:18px;
+        padding:20px;
+        color:white;">
+
+        <h3>🤖 Sistem</h3>
+
+        Model Machine Learning menggunakan algoritma
+        <b>Random Forest</b> untuk melakukan prediksi
+        risiko Tuberkulosis Paru.
+
+        </div>
+        """, unsafe_allow_html=True)
