@@ -19,16 +19,48 @@ st.set_page_config(
 
 
 #koneksi Database
-import mysql.connector
+import sqlite3
 
-conn = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="",
-    database="db_tb_paru"
-)
+conn = sqlite3.connect("db_tb_paru.db")
 
 cursor = conn.cursor()
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT,
+    password TEXT
+)
+""")
+
+cursor.execute("""
+INSERT OR IGNORE INTO users VALUES (1,'admin','12345')
+""")
+
+conn.commit()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS pasien (
+    id_pasien INTEGER PRIMARY KEY AUTOINCREMENT,
+    nama TEXT,
+    umur INTEGER,
+    jenis_kelamin TEXT,
+    sesak_nafas TEXT,
+    batuk TEXT,
+    demam TEXT,
+    mual_muntah TEXT,
+    penyakit_bawaan TEXT
+)
+""")
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS hasil_deteksi (
+    id_hasil INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_pasien INTEGER,
+    hasil_prediksi TEXT,
+    probabilitas REAL,
+    tanggal_deteksi TEXT,
+    FOREIGN KEY (id_pasien) REFERENCES pasien(id_pasien)
+)
+""")
 
 # =====================================
 # LOAD MODEL
@@ -86,7 +118,7 @@ if not st.session_state.login:
 
             if st.button("LOG IN", use_container_width=True):
                 cursor.execute(
-                    "SELECT * FROM users WHERE username=%s AND password=%s",
+                    "SELECT * FROM users WHERE username=? AND password=?",
                     (username, password)
                 )
 
