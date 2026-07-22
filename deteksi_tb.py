@@ -65,7 +65,7 @@ def deteksi_tb(cursor, conn, model):
             st.text_input("Sesak Nafas", pasien["sesak"], disabled=True)
 
         with c2:
-            st.text_input("Batuk Berdarah", pasien["batuk"], disabled=True)
+            st.text_input("Batuk", pasien["batuk"], disabled=True)
             st.text_input("Demam", pasien["demam"], disabled=True)
             st.text_input("Mual Muntah", pasien["mual"], disabled=True)
             st.text_input("Penyakit Bawaan", pasien["penyakit"], disabled=True)
