@@ -51,15 +51,18 @@ def input_pasien(cursor, conn):
             )
 
         with c5:
-            batuk = st.selectbox(
-                "Batuk",
-                ["Tidak", "Ya"]
+            batuk = st.number_input(
+            "Batuk (hari)",
+            min_value=0,
+            max_value=365
             )
 
         with c6:
-            demam = st.selectbox(
-                "Demam",
-                ["Tidak", "Ya"]
+            demam = st.number_input(
+            "Suhu Tubuh (°C)",
+            min_value=35.0,
+            max_value=45.0,
+            step=0.1
             )
 
         c7, c8 = st.columns(2)
