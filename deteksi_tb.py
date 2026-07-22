@@ -118,7 +118,7 @@ def deteksi_tb(cursor, conn, model):
         cursor.execute("""
         INSERT INTO hasil_deteksi
         (id_pasien, hasil_prediksi, probabilitas, tanggal_deteksi)
-        VALUES (%s,%s,%s,NOW())
+        VALUES (?,?,?,datetime('now'))
         """, (id_pasien, hasil_prediksi, probabilitas))
 
         conn.commit()
